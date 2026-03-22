@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenue — Mitos Pensionne</title>
+    <link rel="stylesheet" href="/REVENUE/revenue.css">
+</head>
+<body>
+    <div class="container">
+
+        <header>
+            <div class="header-left">
+                <a href="/LOG/index.html" class="back-btn">&#8592; Back</a>
+                <div class="header-title">
+                    <h1>Revenue</h1>
+                    <p class="tagline">session log</p>
+                </div>
+            </div>
+            <div class="summary-strip">
+                <div class="summary-item">
+                    <span class="summary-label">Sessions</span>
+                    <span class="summary-value" id="statSessions">0</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Revenue</span>
+                    <span class="summary-value accent" id="statRevenue">&#8369;0.00</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-item">
+                    <span class="summary-label">Orders Total</span>
+                    <span class="summary-value amber" id="statOrders">&#8369;0.00</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="revenueList" class="rev-list"></div>
+
+    </div>
+
+    <!-- revenue.js is in the same folder as this file (REVENUE FOLDER/) -->
+    <script src="/REVENUE/revenue.js"></script>
+    <script>
+        // ── Helpers ────────────────────────────────────────────────────────────
+        function fmtTime(ts) {
+            if (!ts) return '—';
+            return new Date(ts).toLocaleTimeString('en-PH', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            return new Date(ts).toLocaleDateString('en-PH', {
+                month: 'short', day: 'numeric', year: 'numeric'
+            });
+        }
+        function durLabel(h) {
+            return h ? `${h} hr${h !== 1 ? 's' : ''}` : '—';
+        }
+
+        // ── Main render ────────────────────────────────────────────────────────
+        function renderPage() {
+            const entries = RevenueDB.getAll();   // newest first
+
+            // Summary strip
+            document.getElementById('statSessions').textContent = entries.length;
+            document.getElementById('statRevenue').textContent  =
+                '\u20B1' + entries.reduce((s, e) => s + e.totalBill,   0).toFixed(2);
+            document.getElementById('statOrders').textContent   =
+                '\u20B1' + entries.reduce((s, e) => s + e.ordersTotal, 0).toFixed(2);
+
+            const listEl = document.getElementById('revenueList');
+
+            // Empty state
+            if (!entries.length) {
+                listEl.innerHTML = `
+                    <div class="rev-empty">
+                        <span class="rev-empty-icon">&#128203;</span>
+                        <p>No sessions recorded yet.</p>
+                        <p>Completed room sessions will appear here.</p>
+                    </div>`;
+                return;
+            }
+
+            // Session cards
+            listEl.innerHTML = entries.map(e => {
+                const hasOrders  = e.orders && e.orders.length > 0;
+                const ordersHTML = hasOrders
+                    ? e.orders.map(o => `
+                        <div class="rev-order-row">
+                            <span class="rev-order-name">${o.name}</span>
+                            <span class="rev-order-price">\u20B1${(o.price || 0).toFixed(2)}</span>
+                        </div>`).join('')
+                    : '<div class="rev-order-none">No orders</div>';
+
+                return `
+                <div class="rev-card">
+
+                    <div class="rev-card-header">
+                        <div class="rev-card-title">
+                            <span class="rev-room-name">${e.roomName}</span>
+                            <span class="rev-dur-badge">${durLabel(e.duration)}</span>
+                        </div>
+                        <div class="rev-card-bill">\u20B1${e.totalBill.toFixed(2)}</div>
+                    </div>
+
+                    <div class="rev-meta">
+                        <div class="rev-meta-item">
+                            <span class="rev-meta-label">Date</span>
+                            <span class="rev-meta-val">${fmtDate(e.timeIn)}</span>
+                        </div>
+                        <div class="rev-meta-item">
+                            <span class="rev-meta-label">Time In</span>
+                            <span class="rev-meta-val">${fmtTime(e.timeIn)}</span>
+                        </div>
+                        <div class="rev-meta-item">
+                            <span class="rev-meta-label">Time Out</span>
+                            <span class="rev-meta-val">${fmtTime(e.timeOut)}</span>
+                        </div>
+                        <div class="rev-meta-item">
+                            <span class="rev-meta-label">Room Cost</span>
+                            <span class="rev-meta-val accent">\u20B1${e.roomCost.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div class="rev-orders-wrap">
+                        <div class="rev-orders-label">Orders</div>
+                        <div class="rev-orders-list">${ordersHTML}</div>
+                        ${hasOrders ? `
+                        <div class="rev-orders-sub">
+                            <span>Orders subtotal</span>
+                            <span>\u20B1${e.ordersTotal.toFixed(2)}</span>
+                        </div>` : ''}
+                    </div>
+
+                    <div class="rev-card-footer">
+                        <span class="rev-footer-label">Total Bill</span>
+                        <span class="rev-footer-val">\u20B1${e.totalBill.toFixed(2)}</span>
+                    </div>
+
+                </div>`;
+            }).join('');
+        }
+
+        // Run on load
+        renderPage();
+    </script>
+</body>
+</html>

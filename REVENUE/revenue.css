@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ─── Variables (mirrors main style.css) ─────────────────────────────────── */
+:root {
+    --bg:            #0e0e0f;
+    --surface:       #161618;
+    --surface-2:     #1e1e21;
+    --surface-3:     #26262a;
+    --border:        #2a2a2e;
+    --border-subtle: #1f1f23;
+    --text:          #e8e8ea;
+    --text-muted:    #6b6b72;
+    --text-dim:      #3e3e44;
+    --accent:        #c8f065;
+    --accent-dim:    rgba(200, 240, 101, 0.08);
+    --red:           #ff5e5e;
+    --amber:         #f5a623;
+    --radius:        12px;
+    --radius-sm:     8px;
+    --radius-lg:     16px;
+}
+
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+body {
+    font-family: 'DM Sans', sans-serif;
+    background:  var(--bg);
+    color:       var(--text);
+    min-height:  100vh;
+    padding:     28px;
+    font-size:   14px;
+    line-height: 1.5;
+}
+
+.container {
+    max-width:      860px;
+    margin:         0 auto;
+    display:        flex;
+    flex-direction: column;
+    gap:            20px;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+header {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    flex-wrap:       wrap;
+    gap:             16px;
+    padding:         20px 28px;
+    background:      var(--surface);
+    border:          1px solid var(--border);
+    border-radius:   var(--radius-lg);
+}
+
+.header-left {
+    display:     flex;
+    align-items: center;
+    gap:         18px;
+}
+
+.back-btn {
+    font-family:     'DM Mono', monospace;
+    font-size:       0.8em;
+    color:           var(--text-muted);
+    text-decoration: none;
+    border:          1px solid var(--border);
+    padding:         8px 14px;
+    border-radius:   var(--radius-sm);
+    transition:      all 0.15s ease;
+    white-space:     nowrap;
+    background:      transparent;
+}
+.back-btn:hover { color: var(--text); background: var(--surface-2); }
+
+h1 {
+    font-family:    'DM Mono', monospace;
+    font-size:      1.3em;
+    font-weight:    500;
+    color:          var(--text);
+    letter-spacing: -0.2px;
+}
+.tagline {
+    font-family: 'DM Mono', monospace;
+    font-size:   0.75em;
+    color:       var(--text-muted);
+    margin-top:  2px;
+}
+
+/* ─── Summary Strip ───────────────────────────────────────────────────────── */
+.summary-strip {
+    display:       flex;
+    align-items:   center;
+    gap:           20px;
+    background:    var(--surface-2);
+    border:        1px solid var(--border);
+    border-radius: var(--radius);
+    padding:       14px 20px;
+    flex-wrap:     wrap;
+}
+.summary-item {
+    display:        flex;
+    flex-direction: column;
+    gap:            3px;
+}
+.summary-label {
+    font-family:    'DM Mono', monospace;
+    font-size:      0.65em;
+    color:          var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.summary-value {
+    font-family: 'DM Mono', monospace;
+    font-size:   1.2em;
+    font-weight: 500;
+    color:       var(--text);
+}
+.summary-value.accent { color: var(--accent); }
+.summary-value.amber  { color: var(--amber);  }
+
+.summary-divider {
+    width:       1px;
+    height:      30px;
+    background:  var(--border);
+    flex-shrink: 0;
+}
+
+/* ─── Revenue List ────────────────────────────────────────────────────────── */
+.rev-list {
+    display:        flex;
+    flex-direction: column;
+    gap:            12px;
+}
+
+/* ─── Empty State ─────────────────────────────────────────────────────────── */
+.rev-empty {
+    text-align:    center;
+    padding:       72px 24px;
+    color:         var(--text-dim);
+    font-family:   'DM Mono', monospace;
+    font-size:     0.85em;
+    line-height:   2;
+    border:        1px dashed var(--border);
+    border-radius: var(--radius-lg);
+}
+.rev-empty-icon {
+    display:       block;
+    font-size:     2em;
+    margin-bottom: 12px;
+    opacity:       0.4;
+}
+
+/* ─── Session Card ────────────────────────────────────────────────────────── */
+.rev-card {
+    background:    var(--surface);
+    border:        1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow:      hidden;
+    transition:    border-color 0.15s ease;
+}
+.rev-card:hover { border-color: var(--surface-3); }
+
+/* Card header row */
+.rev-card-header {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    padding:         15px 20px;
+    border-bottom:   1px solid var(--border-subtle);
+    gap:             12px;
+}
+.rev-card-title {
+    display:     flex;
+    align-items: center;
+    gap:         10px;
+}
+.rev-room-name {
+    font-family: 'DM Mono', monospace;
+    font-size:   1.05em;
+    font-weight: 500;
+    color:       var(--text);
+}
+.rev-dur-badge {
+    font-family:    'DM Mono', monospace;
+    font-size:      0.68em;
+    color:          var(--text-muted);
+    background:     var(--surface-2);
+    border:         1px solid var(--border);
+    padding:        2px 8px;
+    border-radius:  4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.rev-card-bill {
+    font-family: 'DM Mono', monospace;
+    font-size:   1.15em;
+    font-weight: 500;
+    color:       var(--accent);
+}
+
+/* Meta grid */
+.rev-meta {
+    display:               grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom:         1px solid var(--border-subtle);
+}
+.rev-meta-item {
+    display:        flex;
+    flex-direction: column;
+    gap:            4px;
+    padding:        12px 20px;
+    border-right:   1px solid var(--border-subtle);
+}
+.rev-meta-item:last-child { border-right: none; }
+
+.rev-meta-label {
+    font-family:    'DM Mono', monospace;
+    font-size:      0.62em;
+    color:          var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+.rev-meta-val {
+    font-family: 'DM Mono', monospace;
+    font-size:   0.88em;
+    font-weight: 500;
+    color:       var(--text);
+}
+.rev-meta-val.accent { color: var(--accent); }
+
+/* Orders section */
+.rev-orders-wrap {
+    padding:        14px 20px;
+    border-bottom:  1px solid var(--border-subtle);
+    display:        flex;
+    flex-direction: column;
+    gap:            8px;
+}
+.rev-orders-label {
+    font-family:    'DM Mono', monospace;
+    font-size:      0.62em;
+    color:          var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+.rev-orders-list {
+    display:        flex;
+    flex-direction: column;
+    gap:            4px;
+}
+.rev-order-row {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    padding:         5px 10px;
+    background:      var(--surface-2);
+    border-radius:   var(--radius-sm);
+}
+.rev-order-name  { font-size: 0.88em; color: var(--text); }
+.rev-order-price {
+    font-family: 'DM Mono', monospace;
+    font-size:   0.85em;
+    font-weight: 500;
+    color:       var(--amber);
+}
+.rev-order-none {
+    font-family: 'DM Mono', monospace;
+    font-size:   0.78em;
+    color:       var(--text-dim);
+    padding:     4px 0;
+}
+.rev-orders-sub {
+    display:         flex;
+    justify-content: space-between;
+    padding-top:     8px;
+    border-top:      1px solid var(--border-subtle);
+    font-family:     'DM Mono', monospace;
+    font-size:       0.78em;
+    color:           var(--text-muted);
+}
+
+/* Card footer */
+.rev-card-footer {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    padding:         12px 20px;
+    background:      var(--surface-2);
+}
+.rev-footer-label {
+    font-family:    'DM Mono', monospace;
+    font-size:      0.68em;
+    color:          var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+.rev-footer-val {
+    font-family: 'DM Mono', monospace;
+    font-size:   1.1em;
+    font-weight: 500;
+    color:       var(--accent);
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+
+/* ─── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    body { padding: 14px; }
+
+    header {
+        flex-direction: column;
+        align-items:    flex-start;
+        padding:        16px 18px;
+    }
+
+    .summary-strip   { width: 100%; gap: 14px; padding: 12px 16px; }
+    .summary-divider { display: none; }
+
+    /* 2-col meta on small screens */
+    .rev-meta { grid-template-columns: repeat(2, 1fr); }
+    .rev-meta-item:nth-child(2) { border-right: none; }
+    .rev-meta-item:nth-child(3) { border-top: 1px solid var(--border-subtle); }
+    .rev-meta-item:nth-child(4) {
+        border-top:   1px solid var(--border-subtle);
+        border-right: none;
+    }
+}
