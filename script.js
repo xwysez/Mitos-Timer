@@ -103,7 +103,7 @@ function generateRoomTiles() {
 // =============================================================================
 async function loadRooms() {
     try {
-        const docRef = window.fb.doc(window.db, "mitos", "rooms");
+        const docRef  = window.fb.doc(window.db, "mitos", "rooms");
         const docSnap = await window.fb.getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -118,25 +118,37 @@ async function loadRooms() {
 
             const r = rooms[roomId];
 
-            if (r.endTime && Date.now() > r.endTime) tile.classList.add('expired-notification');
-
-            if (r.startTime) {
-                tile.classList.add('active');
-                const d = new Date(r.startTime);
-                tile.querySelector('.time-input').value =
-                    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-            }
-
-            if (r.selectedDuration) {
-                tile.querySelector('.duration-select').value = r.selectedDuration;
-            }
-
+            // Restore dirty state first
             if (r.isDirty) {
                 tile.classList.add('dirty');
                 tile.querySelector('.status-text').textContent = 'Dirty';
                 hideTimerElements(tile);
             }
 
+            // Restore active timer state
+            if (r.startTime && r.endTime) {
+                tile.classList.add('active');
+
+                // Restore the time input display
+                const d = new Date(r.startTime);
+                tile.querySelector('.time-input').value =
+                    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+                // Restore duration dropdown
+                if (r.selectedDuration) {
+                    tile.querySelector('.duration-select').value = r.selectedDuration;
+                }
+
+                // Mark expired if time already passed
+                if (Date.now() > r.endTime) {
+                    tile.classList.add('expired-notification');
+                }
+
+                // Restore the timer display immediately
+                updateTimerDisplay(roomId);
+            }
+
+            // Restore note badge
             updateNoteBadge(roomId);
         });
 
@@ -289,7 +301,6 @@ async function stopTimer(roomId) {
         const timeOut     = Date.now();
         const cfg         = ROOM_CONFIG.find(c => c.id === roomId);
 
-        // ── Hand off to Revenue module ────────────────────────────────────────
         await RevenueDB.addEntry({
             id:          timeOut,
             roomId,
@@ -303,7 +314,6 @@ async function stopTimer(roomId) {
             totalBill
         });
 
-        // ── Clear this session ────────────────────────────────────────────────
         r.startTime        = null;
         r.endTime          = null;
         r.duration         = null;
@@ -315,8 +325,8 @@ async function stopTimer(roomId) {
     tile.classList.remove('active', 'expired-notification');
     tile.querySelector('.timer-display').textContent = '00:00:00';
     tile.querySelector('.timer-display').style.color = '';
-    tile.querySelector('.room-cost').textContent     = '&#8369;0.00';
-    tile.querySelector('.extra-cost').textContent    = '+&#8369;0.00';
+    tile.querySelector('.room-cost').textContent     = '\u20B10.00';
+    tile.querySelector('.extra-cost').textContent    = '+\u20B10.00';
     tile.querySelector('.time-input').value          = '';
     tile.querySelector('.duration-select').value     = '';
     updateNoteBadge(roomId);
@@ -426,7 +436,7 @@ function updateNoteBadge(roomId) {
 }
 
 // =============================================================================
-// REVENUE BADGE  (green number on the Revenue button)
+// REVENUE BADGE
 // =============================================================================
 function updateRevenueBadge() {
     const badge = document.getElementById('revenueBadge');
@@ -470,8 +480,8 @@ checkAuth();
 generateRoomTiles();
 
 (async () => {
-    await RevenueDB.load();   // load revenue cache first
-    await loadRooms();        // then load room states
+    await RevenueDB.load();
+    await loadRooms();
     updateAllTimers();
     updateRevenueBadge();
 })();
