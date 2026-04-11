@@ -1,5 +1,5 @@
 // =============================================================================
-// revenue.js  —  Revenue Module
+// revenue.js  —  Revenue Module (Firestore-backed)
 //
 // Exposes:  window.RevenueDB
 //
@@ -7,32 +7,47 @@
 //   script.js   (index page) — addEntry(), clearAll(), getAll()
 //   revenue.html             — getAll() via renderPage()
 //
-// All data persists in localStorage under key 'mitos-revenue-log'
+// Requires window.db and window.fb to be set by the Firebase init block
+// in index.html / revenue.html BEFORE this script runs.
 // =============================================================================
 
 const RevenueDB = (() => {
 
-    const KEY = 'mitos-revenue-log';
+    const COL = 'mitos';
+    const DOC = 'revenue';
 
-    // ── Private: read / write localStorage ───────────────────────────────────
-    function load() {
-        try {
-            const raw = localStorage.getItem(KEY);
-            return raw ? JSON.parse(raw) : [];
-        } catch (e) {
-            return [];
-        }
-    }
+    // In-memory cache so getAll() stays synchronous for the render functions
+    let _entries = [];
 
-    function save(log) {
+    // ── Private: write to Firestore ───────────────────────────────────────────
+    async function _persist() {
         try {
-            localStorage.setItem(KEY, JSON.stringify(log));
+            await window.fb.setDoc(
+                window.fb.doc(window.db, COL, DOC),
+                { entries: _entries }
+            );
         } catch (e) {
             console.error('RevenueDB save error:', e);
         }
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
+
+    /**
+     * Load all entries from Firestore into memory.
+     * Must be awaited once on page load before any other call.
+     */
+    async function load() {
+        try {
+            const snap = await window.fb.getDoc(
+                window.fb.doc(window.db, COL, DOC)
+            );
+            _entries = snap.exists() ? (snap.data().entries || []) : [];
+        } catch (e) {
+            console.error('RevenueDB load error:', e);
+            _entries = [];
+        }
+    }
 
     /**
      * Add a completed session.
@@ -52,11 +67,9 @@ const RevenueDB = (() => {
      *   orders      : [{ name: string, price: number }]
      * }
      */
-    function addEntry(entry) {
-        const log = load();
-        log.push(entry);
-        save(log);
-        // Refresh badge if we're on the index page
+    async function addEntry(entry) {
+        _entries.push(entry);
+        await _persist();
         if (typeof updateRevenueBadge === 'function') updateRevenueBadge();
     }
 
@@ -64,19 +77,22 @@ const RevenueDB = (() => {
      * Wipe the entire revenue log.
      * Called by script.js → resetAllRooms()
      */
-    function clearAll() {
-        save([]);
+    async function clearAll() {
+        _entries = [];
+        await _persist();
         if (typeof updateRevenueBadge === 'function') updateRevenueBadge();
     }
 
     /**
      * Return all entries, newest first.
-     * Called by revenue.html on page load.
+     * Called by revenue.html → renderPage() after load() completes.
      */
     function getAll() {
-        return load().slice().reverse();
+        return _entries.slice().reverse();
     }
 
-    return { addEntry, clearAll, getAll };
+    return { load, addEntry, clearAll, getAll };
 
 })();
+
+window.RevenueDB = RevenueDB;

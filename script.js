@@ -1,6 +1,6 @@
 // =============================================================================
 // script.js  —  Room Management Logic
-// Requires: window.RevenueDB  (loaded via REVENUE FOLDER/revenue.js before this)
+// Requires: window.RevenueDB  (loaded via revenue.js before this)
 // =============================================================================
 
 const ROOM_CONFIG = [
@@ -21,7 +21,6 @@ const ROOM_CONFIG = [
 ];
 
 const BASE_HOURS  = 3;
-const STORAGE_KEY = 'mitos-rooms-data';
 
 let rooms           = {};
 let updateInterval  = null;
@@ -104,8 +103,8 @@ function generateRoomTiles() {
 // =============================================================================
 async function loadRooms() {
     try {
-        const docRef = fb.doc(db, "mitos", "rooms");
-        const docSnap = await fb.getDoc(docRef);
+        const docRef = window.fb.doc(window.db, "mitos", "rooms");
+        const docSnap = await window.fb.getDoc(docRef);
 
         if (docSnap.exists()) {
             rooms = docSnap.data().data || {};
@@ -113,7 +112,6 @@ async function loadRooms() {
             rooms = {};
         }
 
-        // 🔥 KEEP YOUR UI RESTORE LOGIC (IMPORTANT)
         Object.keys(rooms).forEach(roomId => {
             const tile = document.querySelector(`[data-room="${roomId}"]`);
             if (!tile) return;
@@ -150,9 +148,10 @@ async function loadRooms() {
 
 async function saveRooms() {
     try {
-        await fb.setDoc(fb.doc(db, "mitos", "rooms"), {
-            data: rooms
-        });
+        await window.fb.setDoc(
+            window.fb.doc(window.db, "mitos", "rooms"),
+            { data: rooms }
+        );
     } catch (e) {
         console.error("Save error:", e);
     }
@@ -278,7 +277,7 @@ function startTimer(roomId) {
 // =============================================================================
 // STOP TIMER  —  writes to RevenueDB
 // =============================================================================
-function stopTimer(roomId) {
+async function stopTimer(roomId) {
     const tile = document.querySelector(`[data-room="${roomId}"]`);
     const r    = rooms[roomId];
 
@@ -291,7 +290,7 @@ function stopTimer(roomId) {
         const cfg         = ROOM_CONFIG.find(c => c.id === roomId);
 
         // ── Hand off to Revenue module ────────────────────────────────────────
-        RevenueDB.addEntry({
+        await RevenueDB.addEntry({
             id:          timeOut,
             roomId,
             roomName:    cfg?.name ?? roomId,
@@ -440,11 +439,11 @@ function updateRevenueBadge() {
 // =============================================================================
 // RESET ALL
 // =============================================================================
-function resetAllRooms() {
+async function resetAllRooms() {
     if (!confirm('Reset all rooms? This will clear all timers, orders, and the entire revenue log.')) return;
 
     rooms = {};
-    RevenueDB.clearAll();
+    await RevenueDB.clearAll();
 
     document.querySelectorAll('.room-tile').forEach(tile => {
         tile.classList.remove('active', 'dirty', 'expired-notification');
@@ -471,7 +470,8 @@ checkAuth();
 generateRoomTiles();
 
 (async () => {
-    await loadRooms();
+    await RevenueDB.load();   // load revenue cache first
+    await loadRooms();        // then load room states
     updateAllTimers();
     updateRevenueBadge();
 })();

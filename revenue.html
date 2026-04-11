@@ -39,8 +39,47 @@
 
     </div>
 
-    <!-- revenue.js is in the same folder as this file (REVENUE FOLDER/) -->
+    <!-- ================================================================
+         STEP 1: Firebase SDK (compat build)
+         ================================================================ -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <!-- ================================================================
+         STEP 2: Init Firebase — same config as index.html
+         ================================================================ -->
+    <script>
+        const firebaseConfig = {
+            apiKey:            "YOUR_API_KEY",
+            authDomain:        "YOUR_PROJECT.firebaseapp.com",
+            projectId:         "YOUR_PROJECT_ID",
+            storageBucket:     "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId:             "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const _db = firebase.firestore();
+
+        window.db = _db;
+        window.fb = {
+            doc:    (db, col, docId) => db.collection(col).doc(docId),
+            setDoc: (ref, data)      => ref.set(data),
+            getDoc: (ref)            => ref.get().then(snap => ({
+                exists: () => snap.exists,
+                data:   () => snap.data()
+            }))
+        };
+    </script>
+
+    <!-- ================================================================
+         STEP 3: RevenueDB
+         ================================================================ -->
     <script src="revenue.js"></script>
+
+    <!-- ================================================================
+         STEP 4: Page logic — load from Firestore, then render
+         ================================================================ -->
     <script>
         // ── Helpers ────────────────────────────────────────────────────────────
         function fmtTime(ts) {
@@ -143,8 +182,8 @@
             }).join('');
         }
 
-        // Run on load
-        renderPage();
+        // ── Load from Firestore first, then render ─────────────────────────────
+        RevenueDB.load().then(() => renderPage());
     </script>
 </body>
 </html>
