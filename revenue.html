@@ -48,18 +48,10 @@
     <!-- ================================================================
          STEP 2: Init Firebase — same config as index.html
          ================================================================ -->
+    <script src="firebase-config.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCQVbMpW5CRZJHLBZmN5yH4uygR7mUSwb4",
-            authDomain: "mitos-pensionne.firebaseapp.com",
-            projectId: "mitos-pensionne",
-            storageBucket: "mitos-pensionne.firebasestorage.app",
-            messagingSenderId: "63535680420",
-            appId: "1:63535680420:web:2ab864afc876492f410f31"
-        };
-
         firebase.initializeApp(firebaseConfig);
-        const _db = firebase.firestore();
+        const app = initializeApp(window.firebaseConfig);
 
         window.db = _db;
         window.fb = {
