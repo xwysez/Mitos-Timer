@@ -44,38 +44,45 @@
         </div>
     </div>
 
-    <!-- ================================================================
-         STEP 1: Firebase SDK (compat build — works with normal <script>)
-         ================================================================ -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script type="module">
+        import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- ================================================================
-         STEP 2: Init Firebase and expose db + fb helpers on window
-         ================================================================ -->
-    <script src="firebase-config.js"></script>
-    <script>
-        firebase.initializeApp(firebaseConfig);
-        const app = initializeApp(window.firebaseConfig);
-
-        // Expose the helpers that revenue.js and script.js expect
-        window.db = _db;
-        window.fb = {
-            doc:    (db, col, docId) => db.collection(col).doc(docId),
-            setDoc: (ref, data)      => ref.set(data),
-            getDoc: (ref)            => ref.get().then(snap => ({
-                exists: () => snap.exists,
-                data:   () => snap.data()
-            }))
+        // ================================================================
+        // PASTE YOUR FIREBASE CONFIG HERE
+        // Get it from: Firebase Console → Project Settings → Your Apps
+        // ================================================================
+        const firebaseConfig = {
+            apiKey:            "PASTE_YOUR_apiKey_HERE",
+            authDomain:        "PASTE_YOUR_authDomain_HERE",
+            projectId:         "PASTE_YOUR_projectId_HERE",
+            storageBucket:     "PASTE_YOUR_storageBucket_HERE",
+            messagingSenderId: "PASTE_YOUR_messagingSenderId_HERE",
+            appId:             "PASTE_YOUR_appId_HERE"
         };
-    </script>
 
-    <!-- ================================================================
-         STEP 3: App scripts (order matters)
-         ================================================================ -->
-    <script src="revenue.js"></script>
-    <script src="login.js"></script>
-    <script src="script.js"></script>
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        // Expose to plain scripts (revenue.js, script.js)
+        window.db = db;
+        window.fb = { doc, setDoc, getDoc };
+
+        // Load plain scripts only after Firebase is ready
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s   = document.createElement('script');
+                s.src     = src;
+                s.onload  = resolve;
+                s.onerror = reject;
+                document.body.appendChild(s);
+            });
+        }
+
+        await loadScript('login.js');
+        await loadScript('revenue.js');
+        await loadScript('script.js');
+    </script>
 
 </body>
 </html>
