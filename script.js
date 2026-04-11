@@ -102,15 +102,22 @@ function generateRoomTiles() {
 // =============================================================================
 // ROOM STATE PERSISTENCE
 // =============================================================================
-function loadRooms() {
+async function loadRooms() {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) return;
-        rooms = JSON.parse(saved);
+        const docRef = fb.doc(db, "mitos", "rooms");
+        const docSnap = await fb.getDoc(docRef);
 
+        if (docSnap.exists()) {
+            rooms = docSnap.data().data || {};
+        } else {
+            rooms = {};
+        }
+
+        // 🔥 KEEP YOUR UI RESTORE LOGIC (IMPORTANT)
         Object.keys(rooms).forEach(roomId => {
             const tile = document.querySelector(`[data-room="${roomId}"]`);
             if (!tile) return;
+
             const r = rooms[roomId];
 
             if (r.endTime && Date.now() > r.endTime) tile.classList.add('expired-notification');
@@ -121,27 +128,33 @@ function loadRooms() {
                 tile.querySelector('.time-input').value =
                     `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             }
+
             if (r.selectedDuration) {
                 tile.querySelector('.duration-select').value = r.selectedDuration;
             }
+
             if (r.isDirty) {
                 tile.classList.add('dirty');
                 tile.querySelector('.status-text').textContent = 'Dirty';
                 hideTimerElements(tile);
             }
+
             updateNoteBadge(roomId);
         });
+
     } catch (e) {
-        console.error('loadRooms error:', e);
+        console.error("Load error:", e);
         rooms = {};
     }
 }
 
-function saveRooms() {
+async function saveRooms() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(rooms));
+        await fb.setDoc(fb.doc(db, "mitos", "rooms"), {
+            data: rooms
+        });
     } catch (e) {
-        alert('Storage error: browser storage may be full.');
+        console.error("Save error:", e);
     }
 }
 
@@ -456,6 +469,11 @@ function resetAllRooms() {
 // =============================================================================
 checkAuth();
 generateRoomTiles();
-loadRooms();
-updateRevenueBadge();
+
+(async () => {
+    await loadRooms();
+    updateAllTimers();
+    updateRevenueBadge();
+})();
+
 updateInterval = setInterval(updateAllTimers, 1000);

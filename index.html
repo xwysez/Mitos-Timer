@@ -44,8 +44,30 @@
         </div>
     </div>
 
+    <!-- ✅ FIREBASE (ADD THIS) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.fb = { doc, setDoc, getDoc };
+    </script>
+
+    <!-- YOUR EXISTING FILES -->
     <script src="revenue.js"></script>
-    <script src="login.js"></script>
-    <script src="script.js"></script>
+    <script src="./login.js"></script>
+
+    <!-- ✅ ADD YOUR MAIN SCRIPT -->
+    <script src="./script.js"></script>
+
 </body>
 </html>
