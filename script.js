@@ -1,6 +1,7 @@
 // =============================================================================
 // script.js  —  Room Management Logic
-// Requires: window.RevenueDB  (loaded via revenue.js before this)
+// window.db and window.fb are guaranteed to exist before this runs
+// because index.html loads this via await loadScript() after Firebase init.
 // =============================================================================
 
 const ROOM_CONFIG = [
@@ -20,7 +21,9 @@ const ROOM_CONFIG = [
     { id: 'room12', name: 'Room 12', isPrivate: false, rates: { 3: 300, 8: 650,  12: 950  }, hourlyRate: 100 }
 ];
 
-const BASE_HOURS  = 3;
+const BASE_HOURS    = 3;
+const FIRESTORE_COL = "mitos";
+const FIRESTORE_DOC = "rooms";
 
 let rooms           = {};
 let updateInterval  = null;
@@ -30,23 +33,15 @@ let currentNoteRoom = null;
 // AUTH
 // =============================================================================
 function checkAuth() {
-    try {
-        const auth = localStorage.getItem('mitos-auth');
-        if (!auth || auth !== 'authenticated') {
-            window.location.href = 'login.html';
-        }
-    } catch (e) {
+    const auth = localStorage.getItem('mitos-auth');
+    if (!auth || auth !== 'authenticated') {
         window.location.href = 'login.html';
     }
 }
 
 function logout() {
-    try {
-        localStorage.removeItem('mitos-auth');
-        window.location.href = 'login.html';
-    } catch (e) {
-        console.error('Logout error:', e);
-    }
+    localStorage.removeItem('mitos-auth');
+    window.location.href = 'login.html';
 }
 
 // =============================================================================
@@ -99,74 +94,70 @@ function generateRoomTiles() {
 }
 
 // =============================================================================
-// ROOM STATE PERSISTENCE
+// FIRESTORE HELPERS
 // =============================================================================
-async function loadRooms() {
-    try {
-        const docRef  = window.fb.doc(window.db, "mitos", "rooms");
-        const docSnap = await window.fb.getDoc(docRef);
-
-        if (docSnap.exists()) {
-            rooms = docSnap.data().data || {};
-        } else {
-            rooms = {};
-        }
-
-        Object.keys(rooms).forEach(roomId => {
-            const tile = document.querySelector(`[data-room="${roomId}"]`);
-            if (!tile) return;
-
-            const r = rooms[roomId];
-
-            // Restore dirty state first
-            if (r.isDirty) {
-                tile.classList.add('dirty');
-                tile.querySelector('.status-text').textContent = 'Dirty';
-                hideTimerElements(tile);
-            }
-
-            // Restore active timer state
-            if (r.startTime && r.endTime) {
-                tile.classList.add('active');
-
-                // Restore the time input display
-                const d = new Date(r.startTime);
-                tile.querySelector('.time-input').value =
-                    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-                // Restore duration dropdown
-                if (r.selectedDuration) {
-                    tile.querySelector('.duration-select').value = r.selectedDuration;
-                }
-
-                // Mark expired if time already passed
-                if (Date.now() > r.endTime) {
-                    tile.classList.add('expired-notification');
-                }
-
-                // Restore the timer display immediately
-                updateTimerDisplay(roomId);
-            }
-
-            // Restore note badge
-            updateNoteBadge(roomId);
-        });
-
-    } catch (e) {
-        console.error("Load error:", e);
-        rooms = {};
-    }
+function getDocRef() {
+    return window.fb.doc(window.db, FIRESTORE_COL, FIRESTORE_DOC);
 }
 
 async function saveRooms() {
     try {
-        await window.fb.setDoc(
-            window.fb.doc(window.db, "mitos", "rooms"),
-            { data: rooms }
-        );
+        await window.fb.setDoc(getDocRef(), { data: rooms });
     } catch (e) {
-        console.error("Save error:", e);
+        console.error("saveRooms error:", e);
     }
+}
+
+// =============================================================================
+// LOAD & RESTORE ROOMS FROM FIRESTORE
+// =============================================================================
+async function loadRooms() {
+    try {
+        const snap = await window.fb.getDoc(getDocRef());
+        rooms = snap.exists() ? (snap.data().data || {}) : {};
+    } catch (e) {
+        console.error("loadRooms error:", e);
+        rooms = {};
+        return;
+    }
+
+    // Restore each room's visual state
+    Object.keys(rooms).forEach(roomId => {
+        const tile = document.querySelector(`[data-room="${roomId}"]`);
+        if (!tile) return;
+
+        const r = rooms[roomId];
+
+        // 1. Restore dirty state
+        if (r.isDirty) {
+            tile.classList.add('dirty');
+            tile.querySelector('.status-text').textContent = 'Dirty';
+            hideTimerElements(tile);
+        }
+
+        // 2. Restore active timer
+        if (r.startTime && r.endTime) {
+            tile.classList.add('active');
+
+            const d = new Date(r.startTime);
+            tile.querySelector('.time-input').value =
+                `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+            if (r.selectedDuration) {
+                tile.querySelector('.duration-select').value = r.selectedDuration;
+            }
+
+            if (Date.now() > r.endTime) {
+                tile.classList.add('expired-notification');
+            }
+
+            // Draw the timer immediately so it doesn't flash 00:00:00
+            updateTimerDisplay(roomId);
+        }
+
+        // 3. Restore note badge
+        updateNoteBadge(roomId);
+    });
 }
 
 // =============================================================================
@@ -195,8 +186,17 @@ function hideTimerElements(tile) {
 }
 
 function showTimerElements(tile) {
-    const show = { '.timer-section': 'block', '.time-row': 'flex', '.button-group': 'flex', '.price-tag': 'block', '.add-hour-btn': 'flex' };
-    Object.entries(show).forEach(([sel, val]) => { const el = tile.querySelector(sel); if (el) el.style.display = val; });
+    const show = {
+        '.timer-section': 'block',
+        '.time-row':      'flex',
+        '.button-group':  'flex',
+        '.price-tag':     'block',
+        '.add-hour-btn':  'flex'
+    };
+    Object.entries(show).forEach(([sel, val]) => {
+        const el = tile.querySelector(sel);
+        if (el) el.style.display = val;
+    });
 }
 
 // =============================================================================
@@ -287,7 +287,7 @@ function startTimer(roomId) {
 }
 
 // =============================================================================
-// STOP TIMER  —  writes to RevenueDB
+// STOP TIMER
 // =============================================================================
 async function stopTimer(roomId) {
     const tile = document.querySelector(`[data-room="${roomId}"]`);
@@ -334,7 +334,7 @@ async function stopTimer(roomId) {
 }
 
 // =============================================================================
-// TIMER DISPLAY  (ticks every second)
+// TIMER DISPLAY
 // =============================================================================
 function updateTimerDisplay(roomId) {
     const tile = document.querySelector(`[data-room="${roomId}"]`);
@@ -469,21 +469,25 @@ async function resetAllRooms() {
         showTimerElements(tile);
     });
 
-    saveRooms();
+    await saveRooms();
     updateRevenueBadge();
 }
 
 // =============================================================================
-// INIT
+// INIT — runs after Firebase, revenue.js, and login.js are all loaded
 // =============================================================================
 checkAuth();
 generateRoomTiles();
 
 (async () => {
-    await RevenueDB.load();
-    await loadRooms();
-    updateAllTimers();
-    updateRevenueBadge();
+    try {
+        await RevenueDB.load();
+        await loadRooms();
+        updateAllTimers();
+        updateRevenueBadge();
+    } catch (e) {
+        console.error('Init error:', e);
+    }
 })();
 
 updateInterval = setInterval(updateAllTimers, 1000);
