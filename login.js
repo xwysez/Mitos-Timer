@@ -3,11 +3,9 @@
 // =============================================================================
 
 const CREDENTIALS = {
-    username:      'wyse',
-    password:      'genova',
+        firebaseEmail: 'brutaslouise@gmail.com'
     // This email must match the user you created in Firebase Console
     // (Authentication → Users → Add user)
-    firebaseEmail: 'wyse@mitos.app'
 };
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
