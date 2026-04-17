@@ -134,8 +134,9 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { initializeApp }                              from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc }         from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged }               from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyCQVbMpW5CRZJHLBZmN5yH4uygR7mUSwb4",
@@ -146,8 +147,21 @@
             appId:             "1:63535680420:web:2ab864afc876492f410f31"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db  = getFirestore(app);
+        const app  = initializeApp(firebaseConfig);
+        const db   = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ── Auth guard ────────────────────────────────────────────────────────
+        await new Promise((resolve) => {
+            const unsub = onAuthStateChanged(auth, (user) => {
+                unsub();
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    resolve();
+                }
+            });
+        });
 
         window.db = db;
         window.fb = { doc, setDoc, getDoc };

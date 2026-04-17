@@ -3,17 +3,14 @@
 // =============================================================================
 
 const CREDENTIALS = {
-    username: 'wyse',
-    password: 'genova'
+    username:      'wyse',
+    password:      'genova',
+    // This email must match the user you created in Firebase Console
+    // (Authentication → Users → Add user)
+    firebaseEmail: 'wyse@mitos.app'
 };
 
-function checkAuth() {
-    if (localStorage.getItem('mitos-auth') === 'authenticated') {
-        window.location.href = 'index.html';
-    }
-}
-
-document.getElementById('loginForm').addEventListener('submit', function (e) {
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
 
     const username = document.getElementById('username').value.toLowerCase().trim();
@@ -24,19 +21,23 @@ document.getElementById('loginForm').addEventListener('submit', function (e) {
     errorEl.classList.remove('show');
 
     if (username === CREDENTIALS.username && password === CREDENTIALS.password) {
-        try {
-            localStorage.setItem('mitos-auth', 'authenticated');
-        } catch (e) {
-            console.error('Could not save auth state:', e);
-        }
-
-        btn.textContent   = 'Logging in…';
+        btn.innerHTML     = 'Logging in…';
         btn.style.opacity = '0.7';
         btn.disabled      = true;
 
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 300);
+        try {
+            // Sign in to Firebase — onAuthStateChanged in login.html handles the redirect
+            await window.firebaseSignIn(CREDENTIALS.firebaseEmail, password);
+        } catch (err) {
+            console.error('Firebase Auth error:', err);
+            btn.innerHTML     = 'Log In <span class="btn-arrow">→</span>';
+            btn.style.opacity = '1';
+            btn.disabled      = false;
+
+            errorEl.textContent = 'Login failed. Please try again.';
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 3000);
+        }
 
     } else {
         errorEl.textContent = 'Invalid username or password';
@@ -51,5 +52,3 @@ document.getElementById('loginForm').addEventListener('submit', function (e) {
         setTimeout(() => { errorEl.classList.remove('show'); }, 3000);
     }
 });
-
-checkAuth();

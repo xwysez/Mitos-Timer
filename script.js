@@ -32,15 +32,16 @@ let currentNoteRoom = null;
 // =============================================================================
 // AUTH
 // =============================================================================
-function checkAuth() {
-    const auth = localStorage.getItem('mitos-auth');
-    if (!auth || auth !== 'authenticated') {
-        window.location.href = 'login.html';
-    }
-}
+// Auth guard is handled by index.html (onAuthStateChanged) before this script
+// loads, so no localStorage check is needed here.
+function checkAuth() { /* handled by index.html module */ }
 
-function logout() {
-    localStorage.removeItem('mitos-auth');
+async function logout() {
+    try {
+        if (window.mitoSignOut) await window.mitoSignOut();
+    } catch (e) {
+        console.error('Sign-out error:', e);
+    }
     window.location.href = 'login.html';
 }
 
