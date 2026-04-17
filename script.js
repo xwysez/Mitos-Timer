@@ -101,10 +101,17 @@ function getDocRef() {
 }
 
 async function saveRooms() {
+    // Always save to localStorage first (instant, same-device fallback)
+    try {
+        localStorage.setItem('mitos-rooms', JSON.stringify(rooms));
+    } catch (e) {
+        console.error("saveRooms localStorage error:", e);
+    }
+    // Then sync to Firestore for cross-device persistence
     try {
         await window.fb.setDoc(getDocRef(), { data: rooms });
     } catch (e) {
-        console.error("saveRooms error:", e);
+        console.error("saveRooms Firestore error (data saved locally):", e);
     }
 }
 
@@ -112,13 +119,25 @@ async function saveRooms() {
 // LOAD & RESTORE ROOMS FROM FIRESTORE
 // =============================================================================
 async function loadRooms() {
+    let firestoreOk = false;
     try {
         const snap = await window.fb.getDoc(getDocRef());
         rooms = snap.exists() ? (snap.data().data || {}) : {};
+        firestoreOk = true;
+        // Keep localStorage in sync with what Firestore returned
+        localStorage.setItem('mitos-rooms', JSON.stringify(rooms));
     } catch (e) {
-        console.error("loadRooms error:", e);
-        rooms = {};
-        return;
+        console.error("loadRooms Firestore error, falling back to localStorage:", e);
+    }
+
+    if (!firestoreOk) {
+        try {
+            const local = localStorage.getItem('mitos-rooms');
+            rooms = local ? JSON.parse(local) : {};
+        } catch (e) {
+            console.error("loadRooms localStorage error:", e);
+            rooms = {};
+        }
     }
 
     // Restore each room's visual state

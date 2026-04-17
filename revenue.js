@@ -21,13 +21,20 @@ const RevenueDB = (() => {
 
     // ── Private: write to Firestore ───────────────────────────────────────────
     async function _persist() {
+        // Always save to localStorage first (instant, same-device fallback)
+        try {
+            localStorage.setItem('mitos-revenue', JSON.stringify(_entries));
+        } catch (e) {
+            console.error('RevenueDB localStorage save error:', e);
+        }
+        // Then sync to Firestore for cross-device persistence
         try {
             await window.fb.setDoc(
                 window.fb.doc(window.db, COL, DOC),
                 { entries: _entries }
             );
         } catch (e) {
-            console.error('RevenueDB save error:', e);
+            console.error('RevenueDB Firestore save error (data saved locally):', e);
         }
     }
 
@@ -38,14 +45,27 @@ const RevenueDB = (() => {
      * Must be awaited once on page load before any other call.
      */
     async function load() {
+        let firestoreOk = false;
         try {
             const snap = await window.fb.getDoc(
                 window.fb.doc(window.db, COL, DOC)
             );
             _entries = snap.exists() ? (snap.data().entries || []) : [];
+            firestoreOk = true;
+            // Keep localStorage in sync with what Firestore returned
+            localStorage.setItem('mitos-revenue', JSON.stringify(_entries));
         } catch (e) {
-            console.error('RevenueDB load error:', e);
-            _entries = [];
+            console.error('RevenueDB Firestore load error, falling back to localStorage:', e);
+        }
+
+        if (!firestoreOk) {
+            try {
+                const local = localStorage.getItem('mitos-revenue');
+                _entries = local ? JSON.parse(local) : [];
+            } catch (e) {
+                console.error('RevenueDB localStorage load error:', e);
+                _entries = [];
+            }
         }
     }
 
