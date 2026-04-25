@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — Mitos Pensionne</title>
     <link rel="stylesheet" href="login.css">
+    <style>
+        /* Make error box wrap long Firebase messages properly */
+        .error-message {
+            word-break: break-word;
+            white-space: normal;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
 
@@ -17,29 +25,25 @@
                 <p class="login-sub">room management system</p>
             </div>
 
-            <div class="error-message" id="errorMessage">
-                Invalid username or password
-            </div>
+            <div class="error-message" id="errorMessage"></div>
 
-            <form class="login-form" id="loginForm" autocomplete="off">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="username" required>
-                </div>
+            <form class="login-form" id="loginForm" autocomplete="off" novalidate>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="password" required>
+                    <input type="password" id="password" placeholder="Enter password" required autofocus>
                 </div>
-                <button type="submit" class="login-btn">Log In <span class="btn-arrow">→</span></button>
+                <button type="submit" class="login-btn">
+                    Log In <span class="btn-arrow">→</span>
+                </button>
             </form>
 
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp }                   from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { initializeApp }                              from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword,
-                 onAuthStateChanged }              from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+                 onAuthStateChanged }                        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyCQVbMpW5CRZJHLBZmN5yH4uygR7mUSwb4",
@@ -53,26 +57,57 @@
         const app  = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // If already signed in, skip login screen
+        // If already signed in, go straight to dashboard
         onAuthStateChanged(auth, (user) => {
             if (user) window.location.href = 'index.html';
         });
 
-        // Expose Firebase sign-in for login.js to call
-        window.firebaseSignIn = (email, password) =>
-            signInWithEmailAndPassword(auth, email, password);
+        const FIREBASE_EMAIL = 'brutaslouise@gmail.com';
 
-        function loadScript(src) {
-            return new Promise((resolve, reject) => {
-                const s   = document.createElement('script');
-                s.src     = src;
-                s.onload  = resolve;
-                s.onerror = reject;
-                document.body.appendChild(s);
-            });
+        const form    = document.getElementById('loginForm');
+        const errorEl = document.getElementById('errorMessage');
+        const btn     = document.querySelector('.login-btn');
+
+        const ERROR_MESSAGES = {
+            'auth/invalid-credential':    'Wrong password. Please try again.',
+            'auth/user-not-found':        'Account not found in Firebase. Check Firebase Console → Authentication → Users.',
+            'auth/wrong-password':        'Wrong password. Please try again.',
+            'auth/too-many-requests':     'Too many failed attempts. Wait a few minutes and try again.',
+            'auth/operation-not-allowed': 'Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.',
+            'auth/network-request-failed':'Network error. Check your internet connection.',
+        };
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.classList.add('show');
         }
 
-        await loadScript('login.js');
+        function hideError() {
+            errorEl.classList.remove('show');
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const password = document.getElementById('password').value;
+            if (!password) { showError('Please enter your password.'); return; }
+
+            btn.innerHTML     = 'Logging in…';
+            btn.style.opacity = '0.7';
+            btn.disabled      = true;
+
+            try {
+                await signInWithEmailAndPassword(auth, FIREBASE_EMAIL, password);
+                // onAuthStateChanged above handles the redirect
+            } catch (err) {
+                console.error('[Login error]', err.code, err.message);
+                btn.innerHTML     = 'Log In <span class="btn-arrow">→</span>';
+                btn.style.opacity = '1';
+                btn.disabled      = false;
+                showError(ERROR_MESSAGES[err.code] || 'Error: ' + err.code);
+            }
+        });
     </script>
 
 </body>
