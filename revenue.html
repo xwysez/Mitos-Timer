@@ -152,16 +152,12 @@
         const auth = getAuth(app);
 
         // ── Auth guard ────────────────────────────────────────────────────────
-        await new Promise((resolve) => {
-            const unsub = onAuthStateChanged(auth, (user) => {
-                unsub();
-                if (!user) {
-                    window.location.href = 'login.html';
-                } else {
-                    resolve();
-                }
-            });
-        });
+        // authStateReady() waits until Firebase has fully restored the session
+        // before we check — prevents false redirects on page load.
+        await auth.authStateReady();
+        if (!auth.currentUser) {
+            window.location.href = 'login.html';
+        }
 
         window.db = db;
         window.fb = { doc, setDoc, getDoc };
